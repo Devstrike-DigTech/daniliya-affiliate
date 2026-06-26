@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthSplit } from "@/components/onboarding/shells";
@@ -113,6 +114,12 @@ export default function SignupStep() {
           Sign up
         </button>
       </form>
+      <p className="mt-6 text-sm text-ink/60">
+        Already have an account?{" "}
+        <Link href="/login" className="font-bold text-brand hover:underline">
+          Log in
+        </Link>
+      </p>
     </AuthSplit>
   );
 }

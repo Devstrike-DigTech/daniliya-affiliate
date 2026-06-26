@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import Icon from "@/components/Icon";
 import CopyButton from "@/components/CopyButton";
-import { affiliate, dashboardNav, LANDING_URL, masterLink } from "@/lib/dashboard";
+import { affiliate, dashboardNav, masterLink } from "@/lib/dashboard";
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -71,7 +71,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
         <Icon name="chevron-right" size={16} className="text-ink/40" />
       </Link>
       <a
-        href={LANDING_URL}
+        href="/login"
         className="mt-2 flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-bold text-red-500 transition-colors hover:bg-red-50"
       >
         <Icon name="logout" size={18} /> Sign out
@@ -88,8 +88,10 @@ export default function DashboardShell({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
-  // Onboarding (/join) brings its own chrome — render it without the sidebar.
-  if (pathname?.startsWith("/join")) return <>{children}</>;
+  // Onboarding (/join) and the auth pages bring their own chrome — render them
+  // without the dashboard sidebar.
+  const bare = ["/join", "/login", "/forgot-password", "/reset-password"];
+  if (pathname && bare.some((r) => pathname.startsWith(r))) return <>{children}</>;
 
   return (
     <div className="min-h-screen bg-paper lg:flex">
