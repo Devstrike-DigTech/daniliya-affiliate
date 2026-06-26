@@ -86,6 +86,10 @@ export default function DashboardShell({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Onboarding (/join) brings its own chrome — render it without the sidebar.
+  if (pathname?.startsWith("/join")) return <>{children}</>;
 
   return (
     <div className="min-h-screen bg-paper lg:flex">
