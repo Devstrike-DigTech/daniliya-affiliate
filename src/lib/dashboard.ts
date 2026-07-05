@@ -1,5 +1,7 @@
-// Dummy data for the affiliate dashboard. Figures mirror the Figma design
-// (tiered-percentage commission model). Swap for real API data later.
+// Dummy data for the affiliate dashboard. Figures mirror the confirmed
+// commission model: a FLAT ₦10,000 per confirmed sale (not tiered %).
+// Tiers are loyalty ranks (status + perks), not commission rates.
+// Swap for real API data later.
 
 import { products } from "@/lib/data";
 
@@ -12,7 +14,6 @@ export const affiliate = {
   phone: "0813 857 3848",
   dob: "08/09/1996",
   tier: "Silver",
-  tierRate: 12, // % commission per sale at current tier
   bank: { name: "Access Bank", masked: "**** 7890", accountName: "Jane O." },
 };
 
@@ -25,9 +26,9 @@ export const masterLink = `${DOMAIN}/products?ref=${affiliate.code}`;
 export const productLink = (slug: string) =>
   `${DOMAIN}/products/${slug}?ref=${affiliate.code}`;
 
-// dashboard uses a percentage commission per the design
-export const DASH_RATE = 0.15;
-export const earnOn = (price: number) => Math.round((price * DASH_RATE) / 50) * 50;
+// Flat commission: every confirmed sale earns ₦10,000, regardless of product.
+export const COMMISSION_PER_SALE = 10000;
+export const earnOn = (_price?: number) => COMMISSION_PER_SALE;
 
 export const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 
@@ -44,8 +45,8 @@ export const dashboardNav = [
 
 /* ── Overview ────────────────────────────────────────────── */
 export const overviewStats = [
-  { label: "Total earnings", value: "₦86,700", delta: "+18.2%", up: true, icon: "trending-up" },
-  { label: "Pending payout", value: "₦6,525", sub: "Next Monday", icon: "wallet" },
+  { label: "Total earnings", value: "₦460,000", delta: "+18.2%", up: true, icon: "trending-up" },
+  { label: "Pending payout", value: "₦50,000", sub: "Next Monday", icon: "wallet" },
   { label: "Clicks this week", value: "648", delta: "+24%", up: true, icon: "sparkle" },
   { label: "Conversions", value: "7.1%", sub: "46 sales", icon: "grid" },
 ];
@@ -61,7 +62,6 @@ export const weeklySales = [
 ];
 
 export const tierProgress = {
-  rate: "12%",
   current: "Silver",
   next: "Gold",
   pct: 62,
@@ -69,11 +69,11 @@ export const tierProgress = {
 };
 
 export const recentSales = [
-  { order: "S-10241", product: "The Builder's Handbook", commission: "₦2,250", status: "Pending" },
-  { order: "S-10242", product: "Premium Laundry Starter Kit", commission: "₦2,250", status: "Pending" },
-  { order: "S-10243", product: "Affiliate Success Course", commission: "₦2,250", status: "Paid" },
-  { order: "S-10244", product: "Fumigation Service Voucher", commission: "₦2,250", status: "Paid" },
-  { order: "S-10245", product: "Executive Hygiene Bundle", commission: "₦2,250", status: "Paid" },
+  { order: "S-10241", product: "The Builder's Handbook", commission: "₦10,000", status: "Pending" },
+  { order: "S-10242", product: "Premium Laundry Starter Kit", commission: "₦10,000", status: "Pending" },
+  { order: "S-10243", product: "Affiliate Success Course", commission: "₦10,000", status: "Paid" },
+  { order: "S-10244", product: "Fumigation Service Voucher", commission: "₦10,000", status: "Paid" },
+  { order: "S-10245", product: "Executive Hygiene Bundle", commission: "₦10,000", status: "Paid" },
 ] as const;
 
 /* ── My Links ────────────────────────────────────────────── */
@@ -83,14 +83,14 @@ export const linkProducts = products.map((p) => ({
   category: p.category,
   price: p.price,
   image: p.image,
-  earn: earnOn(p.price),
+  earn: COMMISSION_PER_SALE,
   link: productLink(p.slug),
 }));
 
 /* ── Earnings ────────────────────────────────────────────── */
 export const earningsSummary = [
-  { label: "Gross GMV", value: "₦186,000" },
-  { label: "Commission Earned", value: "₦23,000" },
+  { label: "Gross GMV", value: "₦435,000" },
+  { label: "Commission Earned", value: "₦290,000" },
   { label: "Total Transactions", value: "29" },
 ];
 
@@ -101,22 +101,22 @@ export const earningsRows = Array.from({ length: 9 }, (_, i) => ({
   customer: customers[i % customers.length],
   product: "The Builder's Handbook",
   sale: "₦15,000",
-  commission: "₦2,250",
+  commission: "₦10,000",
   status: i % 3 === 0 ? "Pending" : "Paid",
 }));
 
 /* ── Payouts ─────────────────────────────────────────────── */
 export const payoutStats = [
-  { label: "Lifetime paid", value: "₦62,925" },
+  { label: "Lifetime paid", value: "₦120,000" },
   { label: "Payouts to date", value: "4" },
-  { label: "Avg. payout", value: "₦15,731" },
+  { label: "Avg. payout", value: "₦30,000" },
 ];
 
 export const payoutRows = Array.from({ length: 4 }, (_, i) => ({
   reference: `DAN-PO-220${8 - i}`,
   date: "2026-06-12",
   method: "GTBank ****4421",
-  amount: "₦14,250",
+  amount: "₦30,000",
   status: "Paid",
 }));
 
@@ -128,20 +128,20 @@ export const referralStats = [
 ];
 
 export const referralRows = [
-  { name: "Bola K.", code: "DAN-462", orders: 1, spend: "₦35,000", commission: "₦14,250", last: "2026-06-09" },
-  { name: "Tunde A.", code: "DAN-462", orders: 1, spend: "₦35,000", commission: "₦14,250", last: "2026-06-09" },
-  { name: "Ada O.", code: "DAN-462", orders: 3, spend: "₦35,000", commission: "₦14,250", last: "2026-06-09" },
-  { name: "Ifeanyi U.", code: "DAN-462", orders: 1, spend: "₦35,000", commission: "₦14,250", last: "2026-06-09" },
-  { name: "Ngozi M.", code: "DAN-462", orders: 2, spend: "₦35,000", commission: "₦14,250", last: "2026-06-09" },
-  { name: "Hauwa S.", code: "DAN-462", orders: 1, spend: "₦35,000", commission: "₦14,250", last: "2026-06-09" },
-  { name: "Emeka K.", code: "DAN-462", orders: 1, spend: "₦35,000", commission: "₦14,250", last: "2026-06-09" },
+  { name: "Bola K.", code: "DAN-462", orders: 1, spend: "₦15,000", commission: "₦10,000", last: "2026-06-09" },
+  { name: "Tunde A.", code: "DAN-462", orders: 1, spend: "₦15,000", commission: "₦10,000", last: "2026-06-09" },
+  { name: "Ada O.", code: "DAN-462", orders: 3, spend: "₦45,000", commission: "₦30,000", last: "2026-06-09" },
+  { name: "Ifeanyi U.", code: "DAN-462", orders: 1, spend: "₦15,000", commission: "₦10,000", last: "2026-06-09" },
+  { name: "Ngozi M.", code: "DAN-462", orders: 2, spend: "₦30,000", commission: "₦20,000", last: "2026-06-09" },
+  { name: "Hauwa S.", code: "DAN-462", orders: 1, spend: "₦15,000", commission: "₦10,000", last: "2026-06-09" },
+  { name: "Emeka K.", code: "DAN-462", orders: 1, spend: "₦15,000", commission: "₦10,000", last: "2026-06-09" },
 ];
 
 /* ── Leaderboard ─────────────────────────────────────────── */
 export const podium = [
-  { rank: 2, name: "Ibrahim S.", earned: "₦192,000", avatar: 2 },
-  { rank: 1, name: "Tunde A.", earned: "₦487,500", avatar: 1 },
-  { rank: 3, name: "David A.", earned: "₦132,400", avatar: 3 },
+  { rank: 2, name: "Ibrahim S.", earned: "₦920,000", avatar: 2 },
+  { rank: 1, name: "Tunde A.", earned: "₦1,450,000", avatar: 1 },
+  { rank: 3, name: "David A.", earned: "₦610,000", avatar: 3 },
 ];
 
 export const leaderboardRows = Array.from({ length: 6 }, (_, i) => ({
@@ -150,15 +150,17 @@ export const leaderboardRows = Array.from({ length: 6 }, (_, i) => ({
   code: "ADAE-7K2P",
   tier: "Platinum",
   sales: 142,
-  earned: "₦487,500",
+  earned: "₦1,420,000",
   you: i === 3,
 }));
 
+// Loyalty ranks earned by lifetime earnings — commission stays flat ₦10,000.
+// Higher tiers unlock perks, not a higher rate.
 export const tierLadder = [
-  { rate: "10%", label: "Bronze", req: "Requires ₦0 lifetime earnings", color: "bg-[#7C4A03] text-white" },
-  { rate: "12%", label: "Silver", req: "Requires ₦50,000 lifetime earnings", color: "bg-ink/10 text-ink" },
-  { rate: "15%", label: "Gold", req: "Requires ₦250,000 lifetime earnings", color: "bg-brand text-ink" },
-  { rate: "20%", label: "Platinum", req: "Requires ₦1,000,000 lifetime earnings", color: "bg-navy text-white" },
+  { perk: "Standard payouts", label: "Bronze", req: "Requires ₦0 lifetime earnings", color: "bg-[#7C4A03] text-white" },
+  { perk: "Priority support", label: "Silver", req: "Requires ₦50,000 lifetime earnings", color: "bg-ink/10 text-ink" },
+  { perk: "Featured placement", label: "Gold", req: "Requires ₦250,000 lifetime earnings", color: "bg-brand text-ink" },
+  { perk: "Dedicated manager", label: "Platinum", req: "Requires ₦1,000,000 lifetime earnings", color: "bg-[#6d3fa0] text-white" },
 ];
 
 /* ── Resources ───────────────────────────────────────────── */

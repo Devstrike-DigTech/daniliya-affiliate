@@ -32,16 +32,15 @@ export default function KycStep() {
   // approved by an admin, so they go straight to the review state.
   const afterKyc = role === "affiliate" ? "/join/tutorial" : "/join/review";
 
-  const [nin, setNin] = useState("");
-  const [bvn, setBvn] = useState("");
   const [bank, setBank] = useState("");
   const [account, setAccount] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [touched, setTouched] = useState(false);
 
+  // Account name is resolved from the bank + account number (dummy for now).
+  const accountName = bank && account.length === 10 ? "JANE O. WINSLET" : "";
+
   const errors = {
-    nin: nin.length !== 11 ? "Enter your 11-digit NIN." : "",
-    bvn: bvn.length !== 11 ? "Enter your 11-digit BVN." : "",
     bank: !bank ? "Select your bank." : "",
     account: account.length !== 10 ? "Enter your 10-digit account number." : "",
     file: !file ? "Upload a government-issued ID." : "",
@@ -83,37 +82,7 @@ export default function KycStep() {
 
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1.6fr_1fr]">
         <form noValidate className="rounded-2xl border border-ink/10 bg-white p-6 sm:p-8" onSubmit={submit}>
-          <p className="font-bold">Identity numbers</p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className={label}>
-                NIN <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={nin}
-                onChange={(e) => setNin(digits(e.target.value).slice(0, 11))}
-                inputMode="numeric"
-                placeholder="11-digit National Identification Number"
-                className={cls(errors.nin)}
-              />
-              <Err msg={errors.nin} />
-            </div>
-            <div>
-              <label className={label}>
-                BVN <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={bvn}
-                onChange={(e) => setBvn(digits(e.target.value).slice(0, 11))}
-                inputMode="numeric"
-                placeholder="11-digit Bank Verification Number"
-                className={cls(errors.bvn)}
-              />
-              <Err msg={errors.bvn} />
-            </div>
-          </div>
-
-          <p className="mt-6 font-bold">Payout account</p>
+          <p className="font-bold">Payout account</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
               <label className={label}>
@@ -140,6 +109,15 @@ export default function KycStep() {
               />
               <Err msg={errors.account} />
             </div>
+          </div>
+          <div className="mt-4">
+            <label className={label}>Account Name</label>
+            <input
+              value={accountName}
+              readOnly
+              placeholder="Your account name will display here"
+              className={`${base} border-ink/15 bg-ink/[0.03] text-ink/70`}
+            />
           </div>
 
           <p className="mt-6 font-bold">Government-issued ID</p>

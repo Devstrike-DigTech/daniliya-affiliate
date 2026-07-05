@@ -200,10 +200,10 @@ export default function ProfileTabs() {
           <p className="text-sm text-ink/50">Choose how Daniliya keeps you in the loop.</p>
           <div className="mt-5 divide-y divide-ink/10">
             {[
-              ["New referred sale", "When someone buys through your link", true],
-              ["Payout sent", "Every Monday when your commission is paid", true],
-              ["Leaderboard movement", "When your rank or tier changes", false],
-              ["Product & resource updates", "New creatives, scripts and offers", false],
+              ["Email me when I make a sale", "When someone buys through your link", true],
+              ["WhatsApp alert on payout", "Every Monday when your commission is paid", true],
+              ["Weekly performance digest", "A summary of your clicks, sales and earnings", false],
+              ["New product launches", "New creatives, scripts and offers", false],
             ].map(([t, d, on]) => (
               <label key={t as string} className="flex cursor-pointer items-center justify-between gap-4 py-4">
                 <span>

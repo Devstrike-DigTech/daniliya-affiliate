@@ -68,7 +68,7 @@ export default function SignupStep() {
           </div>
           <div>
             <label className={label}>
-              Phone <span className="text-red-500">*</span>
+              Phone / WhatsApp <span className="text-red-500">*</span>
             </label>
             <input
               className={input}
@@ -81,7 +81,7 @@ export default function SignupStep() {
             <label className={label}>
               Password <span className="text-red-500">*</span>
             </label>
-            <PasswordField placeholder="Least 8 characters" required />
+            <PasswordField placeholder="At least 8 characters" required />
           </div>
           <div>
             <label className={label}>

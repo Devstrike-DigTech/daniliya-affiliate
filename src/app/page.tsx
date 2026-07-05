@@ -61,8 +61,8 @@ export default function OverviewPage() {
         {/* Current tier */}
         <div className="flex flex-col rounded-2xl bg-coal p-6 text-white">
           <p className="text-sm font-bold text-brand">Current Tier</p>
-          <p className="mt-3 text-[40px] font-bold leading-none">{tierProgress.rate}</p>
-          <p className="mt-1 text-sm text-white/70">commission per sale</p>
+          <p className="mt-3 text-[40px] font-bold leading-none">{tierProgress.current}</p>
+          <p className="mt-1 text-sm text-white/70">₦10,000 flat commission / sale</p>
           <div className="mt-6 flex items-center justify-between text-sm font-bold">
             <span>{tierProgress.current}</span>
             <span>{tierProgress.next}</span>

@@ -96,17 +96,19 @@ export default function LeaderboardPage() {
 
       {/* Tier ladder */}
       <Card className="mt-6">
-        <p className="font-bold">Commission tier ladder</p>
-        <p className="text-xs text-ink/50">Earn more, unlock higher commission per sale.</p>
+        <p className="font-bold">Loyalty tier ladder</p>
+        <p className="text-xs text-ink/50">
+          Climb the ranks as your lifetime earnings grow — commission stays a
+          flat ₦10,000 per sale at every tier.
+        </p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {tierLadder.map((t) => (
             <div key={t.label} className="rounded-2xl border border-ink/10 p-5">
-              <p className="text-2xl font-bold">{t.rate}</p>
-              <p className="text-xs text-ink/50">per sale</p>
-              <span className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-bold ${t.color}`}>
+              <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${t.color}`}>
                 {t.label}
               </span>
-              <p className="mt-3 text-xs text-ink/55">{t.req}</p>
+              <p className="mt-3 text-[17px] font-bold">{t.perk}</p>
+              <p className="mt-1.5 text-xs text-ink/55">{t.req}</p>
             </div>
           ))}
         </div>
