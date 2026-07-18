@@ -1,33 +1,46 @@
 "use client";
 
-import { useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState, useTransition } from "react";
 import Icon from "@/components/Icon";
 import { Dots } from "@/components/onboarding/shells";
-import { useOnboarding } from "@/components/onboarding/OnboardingContext";
 import { onboardingRoles } from "@/lib/data";
 import { LANDING_URL } from "@/lib/dashboard";
 import { portals } from "@/lib/portals";
+import { selectAffiliateRole } from "@/app/join/actions";
 
-// This is the AFFILIATE portal — only the affiliate path continues here.
-// Other roles redirect out to their own portal / the marketing site.
-const DESTINATION: Record<string, string> = {
+/**
+ * This is the AFFILIATE portal, and it is the only role this app can provision.
+ * The other roles are onboarded by their own portals, so picking one sends the
+ * user there rather than pretending to sign them up here.
+ */
+const EXTERNAL: Record<string, string> = {
   customer: `${LANDING_URL}/shop`,
-  affiliate: "/join/kyc",
   influencer: portals.influencer,
   vendor: portals.vendor,
 };
 
 export default function RoleStep() {
-  const router = useRouter();
-  const { role, setRole } = useOnboarding();
+  const [role, setRole] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const proceed = () => {
     if (!role) return;
-    const dest = DESTINATION[role] ?? "/join/kyc";
-    if (dest.startsWith("http")) window.location.href = dest;
-    else router.push(dest);
+    setError(null);
+
+    const external = EXTERNAL[role];
+    if (external) {
+      window.location.href = external;
+      return;
+    }
+
+    // Affiliate: the server provisions the profile and rotates our tokens (the
+    // JWT still carries the old CUSTOMER role until it does), then redirects.
+    startTransition(async () => {
+      const result = await selectAffiliateRole();
+      if (result?.error) setError(result.error);
+    });
   };
 
   // Roving arrow-key navigation across the radio group.
@@ -48,12 +61,6 @@ export default function RoleStep() {
       <Dots className="-right-12 top-4" />
       <Dots className="-left-12 bottom-4" />
       <div className="mx-auto max-w-[760px] px-4 py-10 sm:px-6">
-        <button
-          onClick={() => router.push("/join/verify")}
-          className="inline-flex items-center gap-2 text-sm font-bold text-ink/70 hover:text-ink"
-        >
-          <Icon name="arrow-left" size={18} /> Go Back
-        </button>
         <p className="mt-8 text-center text-xl font-bold text-brand">Daniliya</p>
         <h1 className="mt-3 text-center text-[26px] font-bold">
           How would you use Daniliya
@@ -131,13 +138,30 @@ export default function RoleStep() {
           })}
         </div>
 
+        {role && EXTERNAL[role] && (
+          <p className="mt-5 rounded-xl bg-cream px-4 py-3 text-sm text-ink/65">
+            {role === "customer"
+              ? "Customers shop on the main Daniliya site — Proceed will take you there."
+              : `${role === "influencer" ? "Creator" : "Vendor"} sign-up happens in its own portal — Proceed will take you there.`}
+          </p>
+        )}
+
+        {error && (
+          <p
+            role="alert"
+            className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+          >
+            {error}
+          </p>
+        )}
+
         <button
-          disabled={!role}
-          aria-disabled={!role}
+          disabled={!role || pending}
+          aria-disabled={!role || pending}
           onClick={proceed}
           className="mt-6 w-full rounded-xl bg-brand py-3.5 text-sm font-bold text-white transition-opacity enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:bg-ink/15 disabled:text-ink/40"
         >
-          Proceed
+          {pending ? "Setting up your account…" : "Proceed"}
         </button>
       </div>
     </div>

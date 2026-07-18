@@ -59,10 +59,13 @@ export function OnboardingAside({
               <Icon name="mail" size={14} className="text-brand" />
               {profile.email}
             </p>
-            <p className="flex items-center gap-2">
-              <Icon name="phone" size={14} className="text-brand" />
-              {profile.phone}
-            </p>
+            {/* Phone is optional at sign-up — show nothing rather than a blank row. */}
+            {profile.phone && (
+              <p className="flex items-center gap-2">
+                <Icon name="phone" size={14} className="text-brand" />
+                {profile.phone}
+              </p>
+            )}
           </div>
         </div>
       </div>

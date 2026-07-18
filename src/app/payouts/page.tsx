@@ -1,119 +1,131 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import Icon from "@/components/Icon";
-import { Card, PageHead } from "@/components/widgets";
-import { affiliate, payoutRows, payoutStats } from "@/lib/dashboard";
+import { Card, PageHead, StatusBadge } from "@/components/widgets";
+import { apiFetchSafe } from "@/lib/api";
+import { naira } from "@/lib/dashboard";
+import {
+  money,
+  shortDate,
+  type BankAccount,
+  type Overview,
+  type Payouts,
+} from "@/lib/affiliate";
 
-// time until next Monday 10:00 WAT
-function useCountdown() {
-  const [t, setT] = useState("00:00:00");
-  useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      const next = new Date(now);
-      const days = (8 - now.getDay()) % 7 || 7;
-      next.setDate(now.getDate() + days);
-      next.setHours(10, 0, 0, 0);
-      let s = Math.max(0, Math.floor((next.getTime() - now.getTime()) / 1000));
-      const h = Math.floor(s / 3600);
-      s -= h * 3600;
-      const m = Math.floor(s / 60);
-      s -= m * 60;
-      const p = (n: number) => String(n).padStart(2, "0");
-      setT(`${p(h)}:${p(m)}:${p(s)}`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
-  return t;
-}
+export const metadata: Metadata = { title: "Payouts" };
 
-export default function PayoutsPage() {
-  const countdown = useCountdown();
+export default async function PayoutsPage() {
+  const [payouts, overview, banks] = await Promise.all([
+    apiFetchSafe<Payouts>("/me/payouts"),
+    apiFetchSafe<Overview>("/affiliate/overview"),
+    apiFetchSafe<BankAccount[]>("/me/bank-accounts"),
+  ]);
+
+  const history = payouts?.history ?? [];
+  const paid = history
+    .filter((h) => h.status.toUpperCase() === "PAID")
+    .reduce((sum, h) => sum + money(h.amount), 0);
+  const defaultBank = banks?.find((b) => b.isDefault) ?? banks?.[0] ?? null;
 
   return (
     <>
       <PageHead
         title="Payouts"
-        subtitle="Confirmed commissions auto-pay every Monday. You can also request early payout."
+        subtitle="Confirmed commissions are disbursed by Daniliya in scheduled payout batches."
       />
 
-      {/* Next payout countdown */}
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-coal p-6 text-white">
-        <div>
+      {/* The countdown-to-Monday hero was removed: no endpoint publishes a
+          payout schedule, minimum payout or next-run date, so every number on
+          it was invented. Wallet balance and pending commission are real. */}
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl bg-coal p-6 text-white">
           <p className="flex items-center gap-2 text-sm font-bold text-brand">
-            <Icon name="wallet" size={16} /> Next Monday Payout
+            <Icon name="wallet" size={16} /> Wallet balance
           </p>
-          <p className="mt-2 text-3xl font-bold">₦6,525</p>
-          <p className="mt-1 text-xs text-white/55">
-            Minimum payout: ₦5,000 · Next auto-payout: Monday, 10:00 WAT
-          </p>
+          <p className="mt-2 text-3xl font-bold">{naira(money(payouts?.walletBalance))}</p>
+          <p className="mt-1 text-xs text-white/55">Available to be disbursed to you.</p>
         </div>
-        <p className="font-mono text-4xl font-bold tabular-nums sm:text-5xl">
-          {countdown.split("").map((c, i) => (
-            <span key={i} className={c === ":" ? "text-white/40" : ""}>
-              {c}
-            </span>
-          ))}
-        </p>
+        <Card>
+          <p className="text-sm text-ink/55">Pending commission</p>
+          <p className="mt-2 text-[26px] font-bold">{naira(money(overview?.pending))}</p>
+          <p className="mt-1 text-xs text-ink/50">
+            Commission on referred orders that has not been disbursed yet.
+          </p>
+        </Card>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        {payoutStats.map((s) => (
-          <Card key={s.label}>
-            <p className="text-sm text-ink/55">{s.label}</p>
-            <p className="mt-2 text-[26px] font-bold">{s.value}</p>
-          </Card>
-        ))}
+      {/* Lifetime paid and payout count are computed from the history rows
+          themselves — there is no summary block on the endpoint. */}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <Card>
+          <p className="text-sm text-ink/55">Lifetime paid</p>
+          <p className="mt-2 text-[26px] font-bold">{naira(paid)}</p>
+        </Card>
+        <Card>
+          <p className="text-sm text-ink/55">Payouts to date</p>
+          <p className="mt-2 text-[26px] font-bold">{history.length}</p>
+        </Card>
       </div>
 
       <Card className="mt-6 overflow-x-auto">
         <p className="font-bold">Payout history</p>
-        <table className="mt-4 w-full min-w-[640px] text-sm">
+        <table className="mt-4 w-full min-w-[520px] text-sm">
           <thead>
             <tr className="border-b border-ink/10 text-left text-xs text-ink/50">
-              <th className="pb-3 font-medium">Reference</th>
-              <th className="pb-3 font-medium">Date</th>
-              <th className="pb-3 font-medium">Method</th>
+              <th className="pb-3 font-medium">Batch</th>
+              <th className="pb-3 font-medium">Scheduled</th>
               <th className="pb-3 font-medium">Amount</th>
               <th className="pb-3 text-right font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
-            {payoutRows.map((r) => (
-              <tr key={r.reference} className="border-b border-ink/5 last:border-0">
-                <td className="py-3.5 text-ink/60">{r.reference}</td>
-                <td className="py-3.5 text-ink/60">{r.date}</td>
-                <td className="py-3.5 text-ink/60">{r.method}</td>
-                <td className="py-3.5 font-bold">{r.amount}</td>
+            {history.map((h) => (
+              <tr key={h.batch} className="border-b border-ink/5 last:border-0">
+                <td className="py-3.5 text-ink/60">{h.batch}</td>
+                <td className="py-3.5 text-ink/60">{shortDate(h.scheduledDate)}</td>
+                <td className="py-3.5 font-bold">{naira(money(h.amount))}</td>
                 <td className="py-3.5 text-right">
-                  <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
-                    {r.status}
-                  </span>
+                  <StatusBadge status={h.status} />
                 </td>
               </tr>
             ))}
+            {history.length === 0 && (
+              <tr>
+                <td colSpan={4} className="py-10 text-center text-sm text-ink/45">
+                  You haven&apos;t been included in a payout batch yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </Card>
 
-      {/* Payout account */}
+      {/* Payout account comes from GET /me/bank-accounts. */}
       <Card className="mt-6 max-w-md">
         <p className="flex items-center gap-2 text-sm text-ink/55">
           <Icon name="wallet" size={16} className="text-brand" /> Payout account
         </p>
-        <p className="mt-2 text-lg font-bold">{affiliate.bank.name}</p>
-        <p className="text-sm text-ink/60">
-          {affiliate.bank.masked} · {affiliate.bank.accountName}
-        </p>
+        {defaultBank ? (
+          <>
+            <p className="mt-2 text-lg font-bold">
+              {defaultBank.bankName ?? "Bank account"}
+            </p>
+            <p className="text-sm text-ink/60">
+              ****{defaultBank.accountNumber.slice(-4)}
+              {defaultBank.accountName ? ` · ${defaultBank.accountName}` : ""}
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-ink/60">
+            No payout account on file yet. Add one so your commission can be
+            disbursed.
+          </p>
+        )}
         <Link
           href="/profile?tab=bank"
           className="mt-4 block rounded-xl bg-brand py-3 text-center text-sm font-bold text-white transition-opacity hover:opacity-90"
         >
-          Update bank details
+          {defaultBank ? "Manage bank details" : "Add bank details"}
         </Link>
       </Card>
     </>

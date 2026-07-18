@@ -1,15 +1,32 @@
 "use client";
 
 import Icon from "@/components/Icon";
-import { Dots, OnboardingTopbar } from "@/components/onboarding/shells";
-import { useOnboarding } from "@/components/onboarding/OnboardingContext";
+import {
+  Dots,
+  OnboardingTopbar,
+  type Profile,
+} from "@/components/onboarding/shells";
 import { LANDING_URL } from "@/lib/dashboard";
 
-export default function ReviewStep() {
-  const { profile, firstName } = useOnboarding();
+export default function ReviewStep({
+  profile,
+  firstName,
+  nextStepLabel,
+}: {
+  profile: Profile;
+  firstName: string;
+  /** Where the server says this user goes next — not a guess. */
+  nextStepLabel: string;
+}) {
   const goHome = () => {
     window.location.href = LANDING_URL;
   };
+
+  const cards: [string, string, string][] = [
+    ["mail", "Email", profile.email],
+    ...(profile.phone ? ([["phone", "Phone", profile.phone]] as [string, string, string][]) : []),
+    ["play", "Next Step", nextStepLabel],
+  ];
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-paper">
@@ -26,15 +43,14 @@ export default function ReviewStep() {
           </span>
           <h1 className="mt-4 text-2xl font-bold">Your KYC is being reviewed</h1>
           <p className="mx-auto mt-2 max-w-md text-sm text-ink/55">
-            Thanks, {firstName}. Our team typically reviews submissions within 24
-            hours. We&apos;ll notify you the moment a decision is made.
+            Thanks, {firstName}. Verification runs in the background and gates
+            your payouts — it does not hold up the tutorial or the assessment,
+            so you can carry on.
           </p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {[
-              ["mail", "Email", profile.email],
-              ["phone", "Phone", profile.phone],
-              ["play", "Next Step", "Tutorial & assessment"],
-            ].map(([icon, l, v]) => (
+          <div
+            className={`mt-6 grid gap-4 ${cards.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+          >
+            {cards.map(([icon, l, v]) => (
               <div key={l} className="rounded-2xl border border-ink/10 p-4 text-left">
                 <Icon name={icon} size={18} className="text-brand" />
                 <p className="mt-2 text-sm font-bold">{l}</p>

@@ -3,13 +3,26 @@
 import Link from "next/link";
 import Icon from "@/components/Icon";
 import CopyButton from "@/components/CopyButton";
-import { GatedShell, OnboardingAside } from "@/components/onboarding/shells";
-import { useOnboarding } from "@/components/onboarding/OnboardingContext";
+import {
+  GatedShell,
+  OnboardingAside,
+  type Profile,
+} from "@/components/onboarding/shells";
 import { LANDING_URL } from "@/lib/dashboard";
 
-export default function PassStep() {
-  const { profile, firstName, code, payLink } = useOnboarding();
-
+export default function PassStep({
+  profile,
+  firstName,
+  code,
+  masterLink,
+}: {
+  profile: Profile;
+  firstName: string;
+  /** Minted by the API when the assessment is passed. */
+  code: string;
+  /** From GET /affiliate/links — null if it could not be loaded. */
+  masterLink: string | null;
+}) {
   return (
     <GatedShell name={firstName}>
       <div className="grid items-start gap-6 lg:grid-cols-[1.6fr_1fr]">
@@ -29,17 +42,34 @@ export default function PassStep() {
             <p className="text-xs font-bold text-brand">Your affiliate code</p>
             <p className="mt-1 text-xl font-bold tracking-wide">{code}</p>
             <p className="mt-4 text-xs text-white/55">Your first payment link</p>
-            <div className="mt-2 flex items-center gap-2 rounded-xl bg-white/5 p-2 pl-4">
-              <span className="min-w-0 flex-1 truncate text-sm text-white/80">{payLink}</span>
-              <CopyButton value={payLink} className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white" />
-            </div>
+            {masterLink ? (
+              <div className="mt-2 flex items-center gap-2 rounded-xl bg-white/5 p-2 pl-4">
+                <span className="min-w-0 flex-1 truncate text-sm text-white/80">
+                  {masterLink}
+                </span>
+                <CopyButton
+                  value={masterLink}
+                  className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white"
+                />
+              </div>
+            ) : (
+              <p className="mt-2 rounded-xl bg-white/5 p-4 text-sm text-white/55">
+                We couldn&apos;t load your links just now — open the Links page in
+                your dashboard to find them.
+              </p>
+            )}
           </div>
           <div className="mt-7 grid gap-4 sm:grid-cols-2">
-            <a href={`${LANDING_URL}/shop`} className="rounded-xl border border-white/25 py-3.5 text-center text-sm font-bold transition-colors hover:border-brand hover:text-brand">
+            <a
+              href={`${LANDING_URL}/shop`}
+              className="rounded-xl border border-white/25 py-3.5 text-center text-sm font-bold transition-colors hover:border-brand hover:text-brand"
+            >
               Browse All Products
             </a>
-            {/* redirects out to the standalone affiliate portal */}
-            <Link href="/" className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
+            >
               Go to Dashboard <Icon name="arrow-right" size={16} />
             </Link>
           </div>

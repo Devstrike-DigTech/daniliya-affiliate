@@ -13,7 +13,12 @@ function prettySize(bytes: number) {
 }
 
 /** Click + drag-drop file upload with type/size validation and a
- * selected-file chip. Reports the chosen file (or null) to the parent. */
+ * selected-file chip. Reports the chosen file (or null) to the parent.
+ *
+ * UNUSED. The KYC step used to render this, but it only ever selected a file —
+ * nothing uploaded it, and its "ready to submit" chip implied otherwise. The
+ * API has no upload endpoint and wants a URL for `govIdUrl`, so KYC now asks
+ * for a link. Wire this back up once an upload endpoint exists. */
 export default function FileDropzone({
   onChange,
   invalid = false,

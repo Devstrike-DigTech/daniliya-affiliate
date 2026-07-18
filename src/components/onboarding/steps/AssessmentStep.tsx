@@ -1,71 +1,71 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import Icon from "@/components/Icon";
 import {
   GatedShell,
   OnboardingAside,
   WhatHappensNext,
+  type Profile,
 } from "@/components/onboarding/shells";
-import { useOnboarding } from "@/components/onboarding/OnboardingContext";
-import {
-  assessmentQuestions,
-  ASSESSMENT_PASS_MARK,
-} from "@/lib/data";
+import { submitAssessment } from "@/app/join/actions";
 
-const NEXT_STEPS = [
-  { text: "We review within 24 hours.", done: true },
-  { text: "You unlock the Tutorial step.", done: true },
-  { text: "Pass the assessment & start earning." },
-];
+export type Question = { id: string; text: string; options: string[] };
 
-export default function AssessmentStep() {
-  const router = useRouter();
-  const {
-    profile,
-    firstName,
-    answers,
-    setAnswers,
-    qIndex,
-    setQIndex,
-    setScore,
-    retakes,
-    setRetakes,
-  } = useOnboarding();
-
-  const total = assessmentQuestions.length;
-  const q = assessmentQuestions[qIndex];
-  const last = qIndex === total - 1;
-  const unanswered = answers.filter((a) => a === -1).length;
-  const [secs, setSecs] = useState(8 * 60);
+/**
+ * Questions are served without their answers and graded server-side; `selected`
+ * is the option TEXT. The only client state is which option is highlighted —
+ * the pass/fail outcome comes back from the API.
+ */
+export default function AssessmentStep({
+  profile,
+  firstName,
+  questions,
+  timerSeconds,
+  passMark,
+  retakesLeft,
+  nextSteps,
+}: {
+  profile: Profile;
+  firstName: string;
+  questions: Question[];
+  timerSeconds: number;
+  passMark: number;
+  retakesLeft: number;
+  nextSteps: { text: string; done?: boolean }[];
+}) {
+  const total = questions.length;
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState<Record<string, string>>({});
+  const [secs, setSecs] = useState(timerSeconds);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   const submit = useCallback(() => {
-    const correct = assessmentQuestions.reduce(
-      (n, qq, i) => n + (answers[i] === qq.answer ? 1 : 0),
-      0,
-    );
-    const pct = Math.round((correct / total) * 100);
-    setScore(pct);
-    if (pct >= ASSESSMENT_PASS_MARK) {
-      router.push("/join/pass");
-    } else {
-      setRetakes(Math.max(0, retakes - 1));
-      router.push("/join/fail");
-    }
-  }, [answers, total, setScore, setRetakes, retakes, router]);
+    setError(null);
+    startTransition(async () => {
+      const answers = questions
+        .filter((q) => selected[q.id] !== undefined)
+        .map((q) => ({ questionId: q.id, selected: selected[q.id] }));
+      const result = await submitAssessment(answers);
+      if (result?.error) setError(result.error);
+    });
+  }, [questions, selected]);
 
+  // Auto-submit when the server's timer runs out — the API rejects a late
+  // attempt outright, so a half-finished paper is better than a lost one.
   useEffect(() => {
-    if (secs <= 0) {
-      submit();
-      return;
-    }
-    const t = setTimeout(() => setSecs((s) => s - 1), 1000);
+    if (secs <= 0) return;
+    const t = setTimeout(() => {
+      setSecs((s) => s - 1);
+      if (secs === 1) submit();
+    }, 1000);
     return () => clearTimeout(t);
   }, [secs, submit]);
 
-  const pick = (i: number) =>
-    setAnswers(answers.map((a, j) => (j === qIndex ? i : a)));
+  const q = questions[index];
+  const last = index === total - 1;
+  const unanswered = total - Object.keys(selected).length;
 
   return (
     <GatedShell name={firstName}>
@@ -73,31 +73,33 @@ export default function AssessmentStep() {
         <div>
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold sm:text-2xl">
-              Daniliya Assessment Question {qIndex + 1} of {total}
+              Daniliya Assessment Question {index + 1} of {total}
             </h1>
             <span className="inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-bold text-white">
-              {String(Math.floor(secs / 60)).padStart(2, "0")}:
-              {String(secs % 60).padStart(2, "0")}
+              {String(Math.floor(Math.max(0, secs) / 60)).padStart(2, "0")}:
+              {String(Math.max(0, secs) % 60).padStart(2, "0")}
               <Icon name="clock" size={15} className="text-brand" />
             </span>
           </div>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-ink/10">
             <div
               className="h-full rounded-full bg-brand transition-all"
-              style={{ width: `${((qIndex + 1) / total) * 100}%` }}
+              style={{ width: `${((index + 1) / total) * 100}%` }}
             />
           </div>
 
           <div className="mt-6 rounded-2xl border border-ink/10 bg-white p-6 sm:p-8">
-            <p className="text-sm text-ink/50">Question {qIndex + 1} of {total}</p>
-            <p className="mt-1 text-lg font-bold">{q.q}</p>
+            <p className="text-sm text-ink/50">
+              Question {index + 1} of {total}
+            </p>
+            <p className="mt-1 text-lg font-bold">{q.text}</p>
             <div className="mt-5 space-y-3">
               {q.options.map((opt, i) => {
-                const active = answers[qIndex] === i;
+                const active = selected[q.id] === opt;
                 return (
                   <button
                     key={opt}
-                    onClick={() => pick(i)}
+                    onClick={() => setSelected((s) => ({ ...s, [q.id]: opt }))}
                     className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-colors ${
                       active ? "border-brand bg-brand/5" : "border-ink/15 hover:border-ink/30"
                     }`}
@@ -114,19 +116,31 @@ export default function AssessmentStep() {
                 );
               })}
             </div>
+
+            {error && (
+              <p
+                role="alert"
+                className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+              >
+                {error}
+              </p>
+            )}
+
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <button
-                onClick={() => setQIndex(Math.max(0, qIndex - 1))}
-                disabled={qIndex === 0}
+                onClick={() => setIndex(Math.max(0, index - 1))}
+                disabled={index === 0}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-ink/20 py-3.5 text-sm font-bold transition-colors enabled:hover:border-ink disabled:opacity-40"
               >
                 <Icon name="arrow-left" size={16} /> Previous
               </button>
               <button
-                onClick={() => (last ? submit() : setQIndex(qIndex + 1))}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                onClick={() => (last ? submit() : setIndex(index + 1))}
+                disabled={pending}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {last ? "Submit" : "Next"} <Icon name="arrow-right" size={16} />
+                {pending ? "Submitting…" : last ? "Submit" : "Next"}
+                <Icon name="arrow-right" size={16} />
               </button>
             </div>
           </div>
@@ -138,10 +152,11 @@ export default function AssessmentStep() {
               Take the <span className="text-brand">Assessment</span>
             </p>
             <p className="mt-2 text-xs text-ink/60">
-              · Pass mark: {ASSESSMENT_PASS_MARK}% · {unanswered} unanswered
+              · Pass mark: {passMark}% · {unanswered} unanswered ·{" "}
+              {retakesLeft} {retakesLeft === 1 ? "attempt" : "attempts"} left
             </p>
           </div>
-          <WhatHappensNext steps={NEXT_STEPS} />
+          <WhatHappensNext steps={nextSteps} />
         </OnboardingAside>
       </div>
     </GatedShell>

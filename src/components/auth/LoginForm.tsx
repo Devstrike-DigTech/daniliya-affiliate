@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthSplit } from "@/components/onboarding/shells";
 import PasswordField from "@/components/PasswordField";
@@ -9,8 +10,38 @@ const input =
   "w-full rounded-xl border border-ink/15 bg-white px-4 py-3 text-sm outline-none transition-colors placeholder:text-ink/35 focus:border-brand";
 const label = "mb-1.5 block text-sm font-bold";
 
-export default function LoginForm() {
+export default function LoginForm({ next }: { next: string | null }) {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(body?.message ?? "Sign in failed.");
+        return;
+      }
+      // /join re-reads the server's onboarding status and forwards an activated
+      // affiliate to the dashboard, or anyone else to the step they're on.
+      router.push(next ? `/join?next=${encodeURIComponent(next)}` : "/join");
+    } catch {
+      setError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <AuthSplit>
@@ -22,21 +53,19 @@ export default function LoginForm() {
         Log in to your affiliate dashboard
       </p>
 
-      <form
-        className="mt-7 space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          router.push("/");
-        }}
-      >
+      <form className="mt-7 space-y-4" onSubmit={submit} noValidate>
         <div>
-          <label className={label}>
+          <label className={label} htmlFor="email">
             Email <span className="text-red-500">*</span>
           </label>
           <input
+            id="email"
             type="email"
             className={input}
             placeholder="e.g yourmail@gmail.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
             required
           />
         </div>
@@ -52,13 +81,26 @@ export default function LoginForm() {
               Forgot password?
             </Link>
           </div>
-          <PasswordField placeholder="Enter your password" required />
+          <PasswordField
+            placeholder="Enter your password"
+            value={password}
+            onChange={setPassword}
+            required
+          />
         </div>
-        <label className="flex items-center gap-2 text-sm text-ink/70">
-          <input type="checkbox" className="accent-brand" /> Keep me signed in
-        </label>
-        <button className="w-full rounded-xl bg-brand py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
-          Log in
+        {error && (
+          <p
+            role="alert"
+            className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+          >
+            {error}
+          </p>
+        )}
+        <button
+          disabled={busy}
+          className="w-full rounded-xl bg-brand py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? "Signing in…" : "Log in"}
         </button>
       </form>
 
