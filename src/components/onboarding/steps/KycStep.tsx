@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import Icon from "@/components/Icon";
+import FileUpload, { type UploadedFile } from "@/components/FileUpload";
 import {
   GatedShell,
   OnboardingAside,
@@ -44,6 +45,7 @@ export default function KycStep({
 }) {
   const [state, formAction, pending] = useActionState(submitKyc, IDLE);
   const [account, setAccount] = useState("");
+  const [idDoc, setIdDoc] = useState<UploadedFile[]>([]);
 
   return (
     <GatedShell name={firstName}>
@@ -141,24 +143,20 @@ export default function KycStep({
               </select>
             </div>
             <div>
-              <label className={label} htmlFor="govIdUrl">
-                Link to your ID <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="govIdUrl"
-                name="govIdUrl"
-                type="url"
-                placeholder="https://…"
-                className={base}
+              <span className={label}>
+                Upload your ID <span className="text-red-500">*</span>
+              </span>
+              {/* The uploaded URL is what submitKyc reads for `govIdUrl`; a
+                  hidden field carries it into the form's FormData. */}
+              <input type="hidden" name="govIdUrl" value={idDoc[0]?.url ?? ""} />
+              <FileUpload
+                purpose="kyc"
+                value={idDoc}
+                onChange={setIdDoc}
+                hint="JPEG, PNG, WebP or PDF · up to 10MB"
               />
             </div>
           </div>
-          <p className="mt-2 rounded-xl bg-cream px-4 py-3 text-xs text-ink/65">
-            <span className="font-bold">File upload isn&apos;t available yet.</span>{" "}
-            The API has no upload endpoint — it expects a URL to an
-            already-hosted image or PDF of your ID — so paste a link rather than
-            choosing a file.
-          </p>
 
           {state.error && (
             <p
