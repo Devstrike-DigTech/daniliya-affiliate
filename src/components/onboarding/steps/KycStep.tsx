@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import Icon from "@/components/Icon";
 import FileUpload, { type UploadedFile } from "@/components/FileUpload";
+import BankAccountFields from "@/components/onboarding/BankAccountFields";
 import {
   GatedShell,
   OnboardingAside,
@@ -28,8 +29,6 @@ const GOV_ID_TYPES = [
 
 export type Bank = { name: string; code: string };
 
-const digits = (s: string) => s.replace(/\D/g, "");
-
 export default function KycStep({
   profile,
   firstName,
@@ -44,7 +43,6 @@ export default function KycStep({
   nextSteps: { text: string; done?: boolean }[];
 }) {
   const [state, formAction, pending] = useActionState(submitKyc, IDLE);
-  const [account, setAccount] = useState("");
   const [idDoc, setIdDoc] = useState<UploadedFile[]>([]);
 
   return (
@@ -76,54 +74,9 @@ export default function KycStep({
           className="rounded-2xl border border-ink/10 bg-white p-6 sm:p-8"
         >
           <p className="font-bold">Payout account</p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className={label} htmlFor="bankCode">
-                Bank <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="bankCode"
-                name="bankCode"
-                defaultValue=""
-                disabled={banksError}
-                className={base}
-              >
-                <option value="" disabled>
-                  {banksError ? "Bank list unavailable" : "Select your bank"}
-                </option>
-                {banks.map((b) => (
-                  <option key={b.code} value={b.code}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-              {banksError && (
-                <p className="mt-1.5 text-xs font-medium text-red-500">
-                  We couldn&apos;t load the bank list from the server.
-                </p>
-              )}
-            </div>
-            <div>
-              <label className={label} htmlFor="accountNumber">
-                Account Number <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="accountNumber"
-                name="accountNumber"
-                value={account}
-                onChange={(e) => setAccount(digits(e.target.value).slice(0, 10))}
-                inputMode="numeric"
-                placeholder="10-digit bank account number"
-                className={base}
-              />
-            </div>
+          <div className="mt-4">
+            <BankAccountFields banks={banks} banksError={banksError} />
           </div>
-          {/* The account name is resolved server-side during verification — we
-              deliberately show no name here rather than invent one. */}
-          <p className="mt-2 text-xs text-ink/45">
-            Your account name is confirmed by your bank when you submit; it is
-            never typed in by hand.
-          </p>
 
           <p className="mt-6 font-bold">Government-issued ID</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">

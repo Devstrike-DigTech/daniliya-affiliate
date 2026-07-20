@@ -26,11 +26,11 @@ export default function PassStep({
   return (
     <GatedShell name={firstName}>
       <div className="grid items-start gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <div className="rounded-3xl bg-coal p-8 text-white sm:p-10">
+        <div className="rounded-3xl bg-coal p-6 text-white sm:p-10">
           <span className="inline-flex items-center gap-2 rounded-full bg-brand/20 px-4 py-1.5 text-xs font-bold text-brand">
             <Icon name="check" size={14} /> You&apos;re In
           </span>
-          <h1 className="mt-5 text-[32px] font-bold leading-tight">
+          <h1 className="mt-5 text-[26px] font-bold leading-tight sm:text-[32px]">
             Welcome to the <span className="text-brand">Daniliya affiliate</span>{" "}
             family, {firstName}.
           </h1>

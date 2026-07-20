@@ -21,6 +21,7 @@ export default function SignupStep() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -43,6 +44,12 @@ export default function SignupStep() {
     }
     if (password !== confirm) {
       setError("Passwords don't match.");
+      return;
+    }
+    // The form is noValidate, so the checkbox's `required` isn't enforced by the
+    // browser — gate it here instead.
+    if (!agreed) {
+      setError("Please accept the Terms and Privacy Policy to continue.");
       return;
     }
 
@@ -148,7 +155,13 @@ export default function SignupStep() {
           and a number.
         </p>
         <label className="flex items-center gap-2 text-sm text-ink/70">
-          <input type="checkbox" required className="accent-brand" /> I agree to
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="accent-brand"
+          />{" "}
+          I agree to
           Daniliya&apos;s{" "}
           <a
             href={`${LANDING_URL}/terms`}
