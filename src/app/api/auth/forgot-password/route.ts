@@ -8,10 +8,12 @@ import { forwardAuth } from "../_forward";
  */
 export async function POST(req: Request) {
   const { email } = await req.json();
+  const origin = req.headers.get("origin");
+  const resetUrl = origin ? `${origin}/reset-password` : undefined;
 
   const result = await forwardAuth(
     "/auth/forgot-password",
-    { email },
+    { email, ...(resetUrl ? { resetUrl } : {}) },
     "Could not start the password reset",
   );
   if (!result.ok) return result.res;
