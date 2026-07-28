@@ -8,10 +8,11 @@ import ProfileTabs from "./ProfileTabs";
 export const metadata: Metadata = { title: "Profile & KYC" };
 
 export default async function ProfilePage() {
-  const [me, overview, banks, kyc] = await Promise.all([
+  const [me, overview, banks, bankList, kyc] = await Promise.all([
     apiFetchSafe<Me>("/auth/me"),
     apiFetchSafe<Overview>("/affiliate/overview"),
     apiFetchSafe<BankAccount[]>("/me/bank-accounts"),
+    apiFetchSafe<{ name: string; code: string }[]>("/banks"),
     apiFetchSafe<KycMe>("/kyc/me"),
   ]);
 
@@ -26,6 +27,7 @@ export default async function ProfilePage() {
           me={me}
           code={overview?.code ?? null}
           banks={banks ?? []}
+          bankList={bankList ?? []}
           kyc={kyc}
         />
       </Suspense>

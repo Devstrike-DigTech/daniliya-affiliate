@@ -1,13 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Icon from "@/components/Icon";
 import PasswordField from "@/components/PasswordField";
 import { Card } from "@/components/widgets";
+import type { Bank } from "@/components/onboarding/BankAccountFields";
 import { shortDate, titleCase, type BankAccount, type KycMe, type Me } from "@/lib/affiliate";
 import { changePassword, type PasswordState } from "./actions";
+import KycModal from "./KycModal";
 
 const label = "mb-1.5 block text-sm font-bold";
 const readonly =
@@ -25,16 +26,20 @@ export default function ProfileTabs({
   me,
   code,
   banks,
+  bankList,
   kyc,
 }: {
   me: Me | null;
   code: string | null;
   banks: BankAccount[];
+  bankList: Bank[];
   kyc: KycMe | null;
 }) {
   const params = useSearchParams();
   const router = useRouter();
   const [tab, setTab] = useState(params.get("tab") ?? "personal");
+  // Open the verification/bank modal; `needsKyc` toggles the identity fields.
+  const [kycModal, setKycModal] = useState<{ needsKyc: boolean } | null>(null);
   const [state, formAction, pending] = useActionState<PasswordState, FormData>(
     changePassword,
     null,
@@ -112,12 +117,12 @@ export default function ProfileTabs({
                   : "You haven't submitted identity documents yet."}
               </p>
               {!kyc?.submitted && (
-                <Link
-                  href="/join/kyc"
-                  className="mt-4 inline-block rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white"
+                <button
+                  onClick={() => setKycModal({ needsKyc: true })}
+                  className="mt-4 inline-block rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
                 >
                   Start verification
-                </Link>
+                </button>
               )}
             </div>
             <Card>
@@ -174,12 +179,12 @@ export default function ProfileTabs({
             </p>
           )}
 
-          <Link
-            href="/join/kyc"
+          <button
+            onClick={() => setKycModal({ needsKyc: !kyc?.submitted })}
             className="mt-5 inline-block rounded-xl bg-brand px-8 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
           >
             {banks.length > 0 ? "Add another account" : "Add bank account"}
-          </Link>
+          </button>
         </Card>
       )}
 
@@ -252,6 +257,14 @@ export default function ProfileTabs({
             </div>
           </Card>
         </div>
+      )}
+
+      {kycModal && (
+        <KycModal
+          bankList={bankList}
+          needsKyc={kycModal.needsKyc}
+          onClose={() => setKycModal(null)}
+        />
       )}
     </>
   );
