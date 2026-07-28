@@ -19,12 +19,13 @@ const label = "mb-1.5 block text-sm font-bold";
 const base =
   "w-full rounded-xl border border-ink/15 bg-white px-4 py-3 text-sm outline-none transition-colors placeholder:text-ink/35 focus:border-brand";
 
-/** Exactly the values the API's SubmitKycDto accepts — anything else is a 400. */
-const GOV_ID_TYPES = [
-  "NIN slip",
-  "Driver's licence",
-  "International passport",
-  "Voter's card",
+/** Smile ID id_type codes the API validates — value is what SubmitKycDto expects. */
+const ID_TYPES = [
+  { code: "NIN", label: "National ID (NIN)" },
+  { code: "BVN", label: "Bank Verification Number (BVN)" },
+  { code: "DRIVERS_LICENSE", label: "Driver's licence" },
+  { code: "PASSPORT", label: "International passport" },
+  { code: "VOTER_ID", label: "Voter's card" },
 ];
 
 export type Bank = { name: string; code: string };
@@ -78,29 +79,49 @@ export default function KycStep({
             <BankAccountFields banks={banks} banksError={banksError} />
           </div>
 
-          <p className="mt-6 font-bold">Government-issued ID</p>
+          <p className="mt-6 font-bold">Identity verification</p>
+          <p className="mt-1 text-xs text-ink/50">
+            We verify your ID number against the issuing authority instantly. It
+            is sent securely for the check and never stored in full.
+          </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={label} htmlFor="govIdType">
+              <label className={label} htmlFor="idType">
                 ID type <span className="text-red-500">*</span>
               </label>
-              <select id="govIdType" name="govIdType" defaultValue="" className={base}>
+              <select id="idType" name="idType" defaultValue="" className={base} required>
                 <option value="" disabled>
                   Select your ID type
                 </option>
-                {GOV_ID_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {ID_TYPES.map((t) => (
+                  <option key={t.code} value={t.code}>
+                    {t.label}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <span className={label}>
-                Upload your ID <span className="text-red-500">*</span>
-              </span>
-              {/* The uploaded URL is what submitKyc reads for `govIdUrl`; a
-                  hidden field carries it into the form's FormData. */}
+              <label className={label} htmlFor="idNumber">
+                ID number <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="idNumber"
+                name="idNumber"
+                className={base}
+                placeholder="Enter the number on your ID"
+                autoComplete="off"
+                required
+              />
+            </div>
+            <div>
+              <label className={label} htmlFor="dob">
+                Date of birth
+              </label>
+              <input id="dob" name="dob" type="date" className={base} max="2010-01-01" />
+            </div>
+            <div>
+              <span className={label}>Upload your ID (optional)</span>
+              {/* Optional supporting document; the URL rides in FormData. */}
               <input type="hidden" name="govIdUrl" value={idDoc[0]?.url ?? ""} />
               <FileUpload
                 purpose="kyc"

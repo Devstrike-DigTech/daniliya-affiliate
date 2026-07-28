@@ -107,13 +107,15 @@ export async function submitKyc(
 ): Promise<ActionState> {
   const accountNumber = String(formData.get("accountNumber") ?? "");
   const bankCode = String(formData.get("bankCode") ?? "");
-  const govIdType = String(formData.get("govIdType") ?? "");
-  const govIdUrl = String(formData.get("govIdUrl") ?? "");
+  const idType = String(formData.get("idType") ?? "");
+  const idNumber = String(formData.get("idNumber") ?? "").trim();
+  const dob = String(formData.get("dob") ?? "").trim();
+  const govIdUrl = String(formData.get("govIdUrl") ?? "").trim();
 
   if (!/^\d{10}$/.test(accountNumber)) return { error: "Enter your 10-digit account number." };
   if (!bankCode) return { error: "Select your bank." };
-  if (!govIdType) return { error: "Select the type of ID you are submitting." };
-  if (!govIdUrl) return { error: "Provide a link to your ID document." };
+  if (!idType) return { error: "Select the type of ID you are submitting." };
+  if (!idNumber) return { error: "Enter your ID number." };
 
   let account: BankAccount;
   try {
@@ -136,7 +138,13 @@ export async function submitKyc(
   try {
     await apiFetch("/kyc", {
       method: "POST",
-      body: JSON.stringify({ govIdType, govIdUrl, bankAccountId: account.id }),
+      body: JSON.stringify({
+        idType,
+        idNumber,
+        ...(dob ? { dob } : {}),
+        ...(govIdUrl ? { govIdUrl } : {}),
+        bankAccountId: account.id,
+      }),
     });
   } catch (err) {
     return { error: messageOf(err, "Could not submit your KYC.") };
