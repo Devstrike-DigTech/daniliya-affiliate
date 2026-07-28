@@ -19,23 +19,30 @@ const EXTERNAL: Record<string, string> = {
   vendor: portals.vendor,
 };
 
+/** This is the Affiliate portal, so Affiliate is pre-selected. */
+const HOME_ROLE = "affiliate";
+const roleTitle = (key: string) =>
+  onboardingRoles.find((r) => r.key === key)?.title ?? key;
+
 export default function RoleStep() {
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<string>(HOME_ROLE);
+  // The external role a confirmation dialog is open for, or null.
+  const [confirming, setConfirming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const proceed = () => {
-    if (!role) return;
+  // Affiliate is the only role this portal can provision. Picking any other
+  // means signing up on that role's own portal, so confirm before leaving.
+  const pick = (key: string) => {
     setError(null);
+    if (EXTERNAL[key]) setConfirming(key);
+    else setRole(key);
+  };
 
-    const external = EXTERNAL[role];
-    if (external) {
-      window.location.href = external;
-      return;
-    }
-
-    // Affiliate: the server provisions the profile and rotates our tokens (the
+  const proceed = () => {
+    setError(null);
+    // The server provisions the affiliate profile and rotates our tokens (the
     // JWT still carries the old CUSTOMER role until it does), then redirects.
     startTransition(async () => {
       const result = await selectAffiliateRole();
@@ -43,7 +50,8 @@ export default function RoleStep() {
     });
   };
 
-  // Roving arrow-key navigation across the radio group.
+  // Roving arrow-key navigation moves focus across the cards; activating a card
+  // (click/Enter) is what picks it, so arrowing to another role never redirects.
   const onKeyNav = (e: React.KeyboardEvent, i: number) => {
     const n = onboardingRoles.length;
     let next = -1;
@@ -51,7 +59,6 @@ export default function RoleStep() {
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (i - 1 + n) % n;
     if (next >= 0) {
       e.preventDefault();
-      setRole(onboardingRoles[next].key);
       cardRefs.current[next]?.focus();
     }
   };
@@ -76,7 +83,9 @@ export default function RoleStep() {
         >
           {onboardingRoles.map((r, i) => {
             const active = role === r.key;
-            const dimmed = role !== null && !active;
+            // Affiliate is pre-selected; keep the other roles full-colour and
+            // clearly clickable rather than dimmed, since they're real choices.
+            const dimmed = false;
             return (
               <button
                 key={r.key}
@@ -85,8 +94,8 @@ export default function RoleStep() {
                 }}
                 role="radio"
                 aria-checked={active}
-                tabIndex={active || (role === null && i === 0) ? 0 : -1}
-                onClick={() => setRole(r.key)}
+                tabIndex={active ? 0 : -1}
+                onClick={() => pick(r.key)}
                 onKeyDown={(e) => onKeyNav(e, i)}
                 className={`relative flex h-40 flex-col justify-end rounded-2xl p-6 text-left outline-none transition-all duration-300 focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
                   r.dark ? "bg-coal text-white" : "bg-brand text-ink"
@@ -138,13 +147,10 @@ export default function RoleStep() {
           })}
         </div>
 
-        {role && EXTERNAL[role] && (
-          <p className="mt-5 rounded-xl bg-cream px-4 py-3 text-sm text-ink/65">
-            {role === "customer"
-              ? "Customers shop on the main Daniliya site — Proceed will take you there."
-              : `${role === "influencer" ? "Creator" : "Vendor"} sign-up happens in its own portal — Proceed will take you there.`}
-          </p>
-        )}
+        <p className="mt-5 text-center text-xs text-ink/45">
+          You&apos;re signing up as an <span className="font-bold text-ink/70">Affiliate</span>.
+          Pick another role only if you meant to register differently.
+        </p>
 
         {error && (
           <p
@@ -156,14 +162,63 @@ export default function RoleStep() {
         )}
 
         <button
-          disabled={!role || pending}
-          aria-disabled={!role || pending}
+          disabled={pending}
+          aria-disabled={pending}
           onClick={proceed}
           className="mt-6 w-full rounded-xl bg-brand py-3.5 text-sm font-bold text-white transition-opacity enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:bg-ink/15 disabled:text-ink/40"
         >
-          {pending ? "Setting up your account…" : "Proceed"}
+          {pending ? "Setting up your account…" : "Continue as Affiliate"}
         </button>
       </div>
+
+      {/* Confirm leaving for another role's portal */}
+      {confirming && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-ink/50"
+            aria-hidden
+            onClick={() => setConfirming(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Register as a ${roleTitle(confirming)}`}
+            className="relative z-10 w-full max-w-md rounded-2xl bg-paper p-6 shadow-2xl"
+          >
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand/15 text-brand">
+              <Icon name="affiliate-links" size={20} tint />
+            </span>
+            <p className="mt-4 text-lg font-bold">
+              Register as a {roleTitle(confirming)}?
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-ink/65">
+              You&apos;re on the Daniliya <span className="font-bold">Affiliate</span> sign-up.
+              {" "}
+              {confirming === "customer"
+                ? "Customers shop on the main Daniliya store — we'll take you there to continue."
+                : `${roleTitle(confirming)} registration happens on its own portal — we'll take you there to finish signing up.`}
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirming(null)}
+                className="rounded-xl border border-ink/15 py-3 text-sm font-bold transition-colors hover:bg-ink/5"
+              >
+                Stay as Affiliate
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = EXTERNAL[confirming];
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+              >
+                Take me there <Icon name="chevron-right" size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
