@@ -1,4 +1,5 @@
 import Icon from "@/components/Icon";
+import { titleCase } from "@/lib/affiliate";
 
 export function PageHead({
   title,
@@ -20,15 +21,23 @@ export function PageHead({
   );
 }
 
+/**
+ * Renders an API status enum. The commission lifecycle is
+ * PENDING → CONFIRMED → DISBURSED, with REVERSED as the failure branch;
+ * payout items use PENDING / PAID / FAILED.
+ */
 export function StatusBadge({ status }: { status: string }) {
-  const paid = status.toLowerCase() === "paid";
+  const key = status.toUpperCase();
+  const tone =
+    key === "CONFIRMED" || key === "DISBURSED" || key === "PAID"
+      ? "bg-green-100 text-green-700"
+      : key === "REVERSED" || key === "FAILED"
+        ? "bg-red-100 text-red-600"
+        : "bg-brand/15 text-brand";
+
   return (
-    <span
-      className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${
-        paid ? "bg-green-100 text-green-700" : "bg-brand/15 text-brand"
-      }`}
-    >
-      {status}
+    <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${tone}`}>
+      {titleCase(status)}
     </span>
   );
 }

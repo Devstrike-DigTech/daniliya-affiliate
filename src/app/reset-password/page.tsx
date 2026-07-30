@@ -3,6 +3,12 @@ import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 
 export const metadata: Metadata = { title: "Reset password" };
 
-export default function Page() {
-  return <ResetPasswordForm />;
+/** `?token=` is read on the server, so no `useSearchParams`/Suspense is needed. */
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string }>;
+}) {
+  const { token } = await searchParams;
+  return <ResetPasswordForm initialToken={token ?? ""} />;
 }

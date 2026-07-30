@@ -12,6 +12,31 @@ const label = "mb-1.5 block text-sm font-bold";
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(body?.message ?? "Could not start the password reset.");
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <AuthSplit>
@@ -23,31 +48,38 @@ export default function ForgotPasswordForm() {
             Forgot your <span className="text-brand">password</span>?
           </h1>
           <p className="mt-2 text-sm text-ink/55">
-            Enter the email linked to your account and we&apos;ll send you a link
+            Enter the email linked to your account and we&apos;ll send you a code
             to reset it.
           </p>
-          <form
-            className="mt-7 space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setSent(true);
-            }}
-          >
+          <form className="mt-7 space-y-4" onSubmit={submit} noValidate>
             <div>
-              <label className={label}>
+              <label className={label} htmlFor="email">
                 Email <span className="text-red-500">*</span>
               </label>
               <input
+                id="email"
                 type="email"
                 className={input}
                 placeholder="e.g yourmail@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
               />
             </div>
-            <button className="w-full rounded-xl bg-brand py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
-              Send reset link
+            {error && (
+              <p
+                role="alert"
+                className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600"
+              >
+                {error}
+              </p>
+            )}
+            <button
+              disabled={busy}
+              className="w-full rounded-xl bg-brand py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {busy ? "Sending…" : "Send reset code"}
             </button>
           </form>
           <p className="mt-6 text-sm text-ink/60">
@@ -65,18 +97,18 @@ export default function ForgotPasswordForm() {
           <h1 className="mt-5 text-[34px] font-bold leading-tight">
             Check your <span className="text-brand">email</span>
           </h1>
+          {/* The API answers identically whether or not the address is
+              registered, so we must not claim an email definitely went out. */}
           <p className="mt-2 text-sm text-ink/60">
-            We sent a password reset link to{" "}
-            <span className="font-bold text-ink">{email || "your email"}</span>.
-            The link expires in 30 minutes.
+            If{" "}
+            <span className="font-bold text-ink">{email || "that address"}</span>{" "}
+            is registered, a reset code is on its way. It expires in an hour.
           </p>
-
-          {/* Demo shortcut: a real build delivers this link by email */}
           <Link
             href="/reset-password"
             className="mt-7 block w-full rounded-xl bg-brand py-3.5 text-center text-sm font-bold text-white transition-opacity hover:opacity-90"
           >
-            Open the reset link
+            I have my code
           </Link>
           <button
             onClick={() => setSent(false)}

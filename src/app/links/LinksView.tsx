@@ -1,67 +1,70 @@
 "use client";
 
-import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import Icon from "@/components/Icon";
 import CopyButton from "@/components/CopyButton";
-import { linkProducts, masterLink, naira } from "@/lib/dashboard";
+import { COMMISSION_PER_SALE, naira } from "@/lib/dashboard";
+import { money, type AffiliateLinks } from "@/lib/affiliate";
 
-export default function LinksView() {
-  const [showQr, setShowQr] = useState(false);
+/** `navigator.share` never changes at runtime, so there is nothing to watch. */
+const NO_SUBSCRIBE = () => () => {};
+
+export default function LinksView({ master, products }: AffiliateLinks) {
   const [query, setQuery] = useState("");
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return linkProducts;
-    return linkProducts.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q),
-    );
-  }, [query]);
+    if (!q) return products;
+    return products.filter((p) => p.title.toLowerCase().includes(q));
+  }, [products, query]);
+
+  // Native share sheet where the browser supports it. Read through
+  // useSyncExternalStore so the server snapshot is `false` and hydration
+  // matches; where it's unavailable the button isn't rendered and Copy is the
+  // fallback.
+  const canShare = useSyncExternalStore(
+    NO_SUBSCRIBE,
+    () => typeof navigator.share === "function",
+    () => false,
+  );
+
+  const share = async (url: string, title: string) => {
+    try {
+      await navigator.share({ title, url });
+    } catch {
+      /* user dismissed the sheet — nothing to do */
+    }
+  };
 
   return (
     <>
       {/* Master link */}
       <div className="mt-6 rounded-2xl bg-coal p-6 text-white">
         <p className="text-sm font-bold">Master link</p>
-        <p className="text-xs text-white/55">Use this for general promotion. Lands customers on the shop.</p>
+        <p className="text-xs text-white/55">
+          Use this for general promotion. Lands customers on the shop.
+        </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <span className="flex-1 truncate rounded-xl bg-white/5 px-4 py-3 text-sm text-white/80">
-            {masterLink}
+            {master}
           </span>
           <div className="flex gap-2">
-            <CopyButton value={masterLink} className="rounded-xl bg-brand px-4 py-3 text-sm font-bold text-white" />
-            <button className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-white/20">
-              <Icon name="share" size={15} /> Share
-            </button>
-            <button
-              onClick={() => setShowQr((v) => !v)}
-              aria-label="Show QR code"
-              aria-pressed={showQr}
-              className={`inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-bold transition-colors ${
-                showQr ? "bg-brand text-white" : "bg-white/10 text-white hover:bg-white/20"
-              }`}
-            >
-              <Icon name="qr" size={16} />
-            </button>
+            <CopyButton
+              value={master}
+              className="rounded-xl bg-brand px-4 py-3 text-sm font-bold text-white"
+            />
+            {canShare && (
+              <button
+                onClick={() => share(master, "Shop Daniliya")}
+                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-white/20"
+              >
+                <Icon name="share" size={15} /> Share
+              </button>
+            )}
           </div>
         </div>
-
-        {showQr && (
-          <div className="mt-4 flex items-center gap-4 rounded-xl bg-white/5 p-4">
-            <span className="flex h-28 w-28 shrink-0 items-center justify-center rounded-xl bg-white text-ink">
-              <Icon name="qr" size={72} />
-            </span>
-            <div>
-              <p className="text-sm font-bold">Scan to open your master link</p>
-              <p className="mt-1 text-xs text-white/60">
-                Add it to flyers, business cards or your WhatsApp status. Point a
-                phone camera to open the shop with your referral applied.
-              </p>
-            </div>
-          </div>
-        )}
+        {/* The QR panel was removed: nothing in the stack generates a real QR
+            code, and the placeholder icon read as a scannable one. */}
       </div>
 
       {/* Search */}
@@ -76,33 +79,43 @@ export default function LinksView() {
         />
       </label>
 
-      {/* Product links */}
+      {/* Product links. GET /affiliate/links returns title, price and link
+          only — no image and no category — so the thumbnail and the category
+          eyebrow that used to sit here are gone. */}
       {list.length === 0 ? (
         <p className="mt-10 text-center text-sm text-ink/50">
-          No product links match &ldquo;{query}&rdquo;.
+          {products.length === 0
+            ? "No products are available to promote yet."
+            : `No product links match “${query}”.`}
         </p>
       ) : (
         <div className="mt-5 grid gap-5 lg:grid-cols-2">
           {list.map((p) => (
-            <div key={p.slug} className="flex gap-4 rounded-2xl border border-ink/10 bg-white p-4">
-              <span className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
-                <Image src={p.image} alt={p.title} fill sizes="80px" className="object-cover" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs uppercase tracking-wide text-ink/40">{p.category}</p>
-                <p className="truncate text-sm font-bold">{p.title}</p>
-                <p className="mt-0.5 flex items-center gap-2 text-sm">
-                  <span className="font-bold">{naira(p.price)}</span>
-                  <span className="rounded-full bg-brand/15 px-2 py-0.5 text-xs font-bold text-brand">
-                    You earn {naira(p.earn)}
-                  </span>
-                </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate rounded-lg bg-ink/5 px-3 py-2 text-xs text-ink/55">
-                    {p.link}
-                  </span>
-                  <CopyButton value={p.link} className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white" />
-                </div>
+            <div key={p.link} className="rounded-2xl border border-ink/10 bg-white p-4">
+              <p className="truncate text-sm font-bold">{p.title}</p>
+              <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-bold">{naira(money(p.price))}</span>
+                <span className="rounded-full bg-brand/15 px-2 py-0.5 text-xs font-bold text-brand">
+                  You earn {naira(COMMISSION_PER_SALE)}
+                </span>
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <span className="min-w-0 flex-1 truncate rounded-lg bg-ink/5 px-3 py-2 text-xs text-ink/55">
+                  {p.link}
+                </span>
+                {canShare && (
+                  <button
+                    onClick={() => share(p.link, p.title)}
+                    aria-label={`Share ${p.title}`}
+                    className="shrink-0 rounded-lg border border-ink/15 px-3 py-2 text-xs font-bold transition-colors hover:border-ink/30"
+                  >
+                    <Icon name="share" size={13} />
+                  </button>
+                )}
+                <CopyButton
+                  value={p.link}
+                  className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white"
+                />
               </div>
             </div>
           ))}
