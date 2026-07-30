@@ -11,11 +11,27 @@ export async function forwardAuth(
   body: unknown,
   fallbackMessage: string,
 ): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; res: NextResponse }> {
-  const res = await fetch(`${API_URL}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    // The API was unreachable — almost always a missing/wrong API_URL on the
+    // deployment (it defaults to http://localhost:4000, which fails from a
+    // hosted server). Surface that instead of a bare 500 with no body, so the
+    // request never silently vanishes before it reaches the backend.
+    console.error(`[auth] cannot reach API at ${API_URL}${path}:`, err);
+    return {
+      ok: false,
+      res: NextResponse.json(
+        { message: "Cannot reach the Daniliya API. Please try again shortly." },
+        { status: 502 },
+      ),
+    };
+  }
   const payload = await res.json().catch(() => null);
 
   if (!res.ok) {
