@@ -94,6 +94,34 @@ export type BankAccount = {
 /** GET /kyc/me */
 export type KycMe = { status: string | null; submitted: boolean };
 
+/** A marketing resource — only the fields for its `type` are populated. */
+export type ResourceType = "CREATIVE" | "SCRIPT" | "VIDEO";
+export type Resource = {
+  id: string;
+  type: ResourceType;
+  title: string;
+  description: string | null;
+  productId: string | null;
+  fileUrl: string | null;
+  fileFormat: string | null;
+  fileMeta: string | null;
+  body: string | null;
+  videoUrl: string | null;
+  duration: string | null;
+};
+
+/** GET /affiliate/resources */
+export type ResourcesLanding = {
+  global: Resource[];
+  products: { id: string; slug: string; title: string; image: string | null; count: number }[];
+};
+
+/** GET /affiliate/resources/:productId */
+export type ProductKit = {
+  product: { id: string; slug: string; title: string };
+  resources: Resource[];
+};
+
 /* ── Formatting ──────────────────────────────────────────── */
 
 /** Money arrives as a string ("20000"). Coerce safely; bad input reads as 0. */
