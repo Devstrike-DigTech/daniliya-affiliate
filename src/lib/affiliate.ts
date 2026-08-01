@@ -66,6 +66,13 @@ export type Leaderboard = {
 /** GET /me/payouts */
 export type Payouts = {
   walletBalance: string;
+  /** Below this, confirmed commission rolls over to the next weekly run. */
+  minPayout: string;
+  /** ISO — the next Monday auto-payout date. */
+  nextPayoutDate: string;
+  lifetimePaid: string;
+  payoutsToDate: number;
+  avgPayout: string;
   history: {
     batch: string;
     amount: string;
